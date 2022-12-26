@@ -1,0 +1,37 @@
+root_path: /Users/bytedance/liufr/AD2S
+
+data:
+  synthetic_ds: 1 # 1,2,3,4
+  save_path: ${root_path}/data/syn_dataset${data.synthetic_ds}.csv
+
+case:
+  id: 1 # 1,2
+  save_path: ${root_path}/data/cases/case${case.id}.csv
+  fig_path: ${root_path}/experiments/case_study/case${case.id}.png
+  pdf_path: ${root_path}/experiments/case_study/case${case.id}.pdf
+
+
+experiments:
+  chains:
+    candidate: [1, 5, 10, 15, 20, 25, 30]
+    ds: 1 # 1,2,3,4
+    save_path: ${root_path}/experiments/parameters_n_chains/dataset${experiments.chains.ds}.csv
+    pdf_path: ${root_path}/experiments/parameters_n_chains/n_chain_dataset${experiments.chains.ds}.pdf
+
+  init_p:
+    ds: 1 # 1,2,3,4
+    candidate: [0.1, 0.3, 0.5, 0.7, 0.9]
+    pdf_path: ${root_path}/experiments/parameters_init_p/${experiments.init_p.ds}_prob.pdf
+
+  concept_drift:
+    ds: 3
+    pdf_path: ${root_path}/experiments/concept_drift/concept_drift.pdf
+
+  ablation:
+    save_path: ${root_path}/experiments/ablation/ablation.csv
+
+
+  comparison:
+    model: 'AD2S' # KNNDetector, RrcfDetector, RShashDetector, TDigest, SvelteDetector, NBC, TranAD, AD2S
+    downsample_granularity: 5 # 5, 60, 300
+    save_path: ${root_path}/experiments/comparison/comparison.csv

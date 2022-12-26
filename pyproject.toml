@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "ad2s"
+version = "0.1.0"
+description = "AD2S: Adaptive Anomaly Detection on Sporadic Data Streams"
+authors = ["Fengrui-Liu <liufengrui18z@ict.ac.cn>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.9.15"
+plotly = "^5.11.0"
+numpy = "^1.24.0"
+pandas = "^1.5.2"
+scikit-learn = "^1.2.0"
+tqdm = "^4.64.1"
+torch = "^1.13.1"
+scipy = "^1.9.3"
+rrcf = "^0.4.3"
+hydra-core = "^1.3.1"
+black = "^22.12.0"
+kaleido = "0.2.1"
+prettytable = "^3.5.0"
+tdigest = "^0.5.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
