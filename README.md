@@ -15,7 +15,7 @@ poetry install
 
 ## Generate the synthetic dataset
 
-Before you generate the synthetic dataset, you need to config the root_path of this project in the `utils/syn_config.yaml` file. You can also use the data directly from the `data` folder.
+Before you generate the synthetic dataset, you need to config the `root_path` of this project in the `utils/syn_config.yaml` file. You can also use the data directly from the `data` folder.
 
 To generate the synthetic dataset, run the following command
 

@@ -1,4 +1,4 @@
-root_path: /Users/bytedance/liufr/AD2S
+root_path: /Users/usr/AD2S # This should be the path to the root directory of the project
 
 data:
   synthetic_ds: 1 # 1,2,3,4
