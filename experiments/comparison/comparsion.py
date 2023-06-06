@@ -15,6 +15,7 @@ from src.ad2s import AD2SDetector
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 import hydra
+from objsize import get_deep_size
 
 # from utils.util import cfg
 
@@ -33,7 +34,7 @@ from tdigest import TDigest
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def cal_knn(df,cfg):
+def cal_knn(df, cfg):
     clf = KNNDetector()
     agg = cfg.experiments.comparison.downsample_granularity
     model_scores = []
@@ -57,10 +58,11 @@ def cal_knn(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
-def cal_rrcf(df,cfg):
+def cal_rrcf(df, cfg):
     clf = RrcfDetector()
     agg = cfg.experiments.comparison.downsample_granularity
     model_scores = []
@@ -84,10 +86,11 @@ def cal_rrcf(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
-def cal_rshash(df,cfg):
+def cal_rshash(df, cfg):
     clf = RShashDetector()
     agg = cfg.experiments.comparison.downsample_granularity
     model_scores = []
@@ -111,10 +114,11 @@ def cal_rshash(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
-def cal_tdigest(df,cfg):
+def cal_tdigest(df, cfg):
     clf = TDigest()
     agg = cfg.experiments.comparison.downsample_granularity
     model_scores = []
@@ -139,10 +143,11 @@ def cal_tdigest(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
-def cal_svelte(df,cfg):
+def cal_svelte(df, cfg):
     clf = SvelteDetector()
 
     model_scores = []
@@ -154,10 +159,11 @@ def cal_svelte(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict_nonzero = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict_nonzero)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
-def cal_nbc(df,cfg):
+def cal_nbc(df, cfg):
     # Prepare: data intervals as inputs
     X_train, X_test, y_train, y_test = train_test_split(
         df["data"], df["label"], test_size=0.7, random_state=0, shuffle=False
@@ -193,10 +199,11 @@ def cal_nbc(df,cfg):
         model_scores.append(score)
 
     auc = roc_auc_score(y_gap_test, np.array(model_scores).ravel())
+    print("Memory usage:", get_deep_size(model))
     return round(auc, 3)
 
 
-def cal_tranad(df,cfg):
+def cal_tranad(df, cfg):
     # Prepare: data intervals as inputs
     X_train, X_test, y_train, y_test = train_test_split(
         df["data"], df["label"], test_size=0.7, random_state=0, shuffle=False
@@ -245,14 +252,12 @@ def cal_tranad(df,cfg):
     def run_train(
         model, train_iter, test_iter, optimizer, criterion, scheduler
     ):
-
         num_epochs = 100
         global_step = 0
         train_loss = 0.0
 
         for e in range(0, num_epochs):
             for i, batch in enumerate(train_iter):
-
                 optimizer.zero_grad()
 
                 loss = train(model=model, criterion=criterion, batch=batch)
@@ -330,10 +335,46 @@ def cal_tranad(df,cfg):
                 rec_res.append(x[-1].tolist())
 
     auc = roc_auc_score(y_gap_test, np.array(rec_res).ravel())
+
+    import gc
+    import objsize
+
+    def get_referents_torch(*objs):
+        # Yield all native referents
+        yield from gc.get_referents(*objs)
+
+        for o in objs:
+            # If the object is a torch tensor, then also yield its storage
+            if type(o) == torch.Tensor:
+                yield o.storage()
+
+    def filter_func(o):
+        # Torch storage points to another meta storage that is
+        # already included in the outer storage calculation,
+        # so we need to filter it.
+        # Also, `torch.dtype` is a common object like Python's types.
+        return not objsize.safe_is_instance(
+            o,
+            (
+                *objsize.SharedObjectOrFunctionType,
+                torch.storage._UntypedStorage,
+                torch.dtype,
+            ),
+        )
+
+    print(
+        "Memory usage:",
+        get_deep_size(
+            model,
+            get_referents_func=get_referents_torch,
+            # filter_func=filter_func,
+        ),
+    )
+
     return round(auc, 3)
 
 
-def cal_ad2s(df,cfg):
+def cal_ad2s(df, cfg):
     clf = AD2SDetector()
     predict = []
     for data in df["data"]:
@@ -344,6 +385,7 @@ def cal_ad2s(df,cfg):
     truth = df["label"][df["data"] != 0.0]
     predict_nonzero = df["predict"][df["data"] != 0.0]
     auc = roc_auc_score(truth, predict_nonzero)
+    print("Memory usage:", get_deep_size(clf))
     return round(auc, 3)
 
 
@@ -353,21 +395,21 @@ def main(cfg):
     df = pd.read_csv(cfg.data.save_path)
 
     if cfg.experiments.comparison.model == "KNNDetector":
-        auc = cal_knn(df,cfg)
+        auc = cal_knn(df, cfg)
     elif cfg.experiments.comparison.model == "RrcfDetector":
-        auc = cal_rrcf(df,cfg)
+        auc = cal_rrcf(df, cfg)
     elif cfg.experiments.comparison.model == "RShashDetector":
-        auc = cal_rshash(df,cfg)
+        auc = cal_rshash(df, cfg)
     elif cfg.experiments.comparison.model == "TDigest":
-        auc = cal_tdigest(df,cfg)
+        auc = cal_tdigest(df, cfg)
     elif cfg.experiments.comparison.model == "SvelteDetector":
-        auc = cal_svelte(df,cfg)
+        auc = cal_svelte(df, cfg)
     elif cfg.experiments.comparison.model == "NBC":
-        auc = cal_nbc(df,cfg)
+        auc = cal_nbc(df, cfg)
     elif cfg.experiments.comparison.model == "TranAD":
-        auc = cal_tranad(df,cfg)
+        auc = cal_tranad(df, cfg)
     elif cfg.experiments.comparison.model == "AD2S":
-        auc = cal_ad2s(df,cfg)
+        auc = cal_ad2s(df, cfg)
 
     auc = round(
         max(auc, 1 - auc), 3
